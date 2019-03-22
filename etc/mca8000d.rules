@@ -1,0 +1,2 @@
+# allow mca8000d to work with non-root users
+SUBSYSTEM=="usb", ATTR{idVendor}=="010c4", ATTR{idProduct}=="0842a", MODE="0666"
