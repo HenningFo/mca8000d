@@ -27,22 +27,19 @@ import matplotlib
 
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-#from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as NavigationToolbar
 
 
 class Instrument():
         def __init__(self):
                 self.device = mca8000d.device()
-                self.status = None
-                self.config = None
        
                         
                 
 
         def bRunning(self):
                 
-                self.status = self.device.reqStatus()
-                return (self.status.MCA_EN)
+                status = self.device.reqStatus()
+                return (status.MCA_EN)
 
 
         def start(self):
@@ -66,12 +63,15 @@ class Instrument():
                 
 
         def clear(self):
-                self.device.disable_MCA_MCS()
                 self.device.spectrum(True, True)
-        
 
-        def freeDevice(self):
-                pass
+
+        def loadConfig(self, filename):
+                newCfg=mca8000d.readConfig(filename)
+                newCfgString = mca8000d.createCfgString(newCfg)
+                self.device.sendCmdConfig(newCfgString)
+                
+
         
                 
                 
@@ -112,13 +112,7 @@ class MatplotPanel(wx.Panel):
                 self.SetSizer(self.sizer)
                 self.figure = Figure()
                 self.axes = self.figure.add_subplot(1,1,1)
-                #self.t = numpy.arange(0,(self.nChannels-1),1)
-                #self.s = numpy.arange(0,(self.nChannels-1),1)
-                
-                #self.axes.plot(self.t,self.s,'k,')
                 self.canvas = FigureCanvas(self, -1, self.figure)
-                #self.toolbar = NavigationToolbar(self.canvas)
-                #self.sizer.Add(self.toolbar, 0, wx.EXPAND)
                 self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
 
         def plotSpectrum(self, spectrum):
@@ -127,12 +121,15 @@ class MatplotPanel(wx.Panel):
                 c = numpy.arange(0, nChannels, 1)
                 self.axes.clear()
                 self.axes.plot(c, spectrum, 'k,')
+                self.canvas.draw()
 
 
 
 class Frame (wx.Frame):
         def __init__(self, parent, title):
                 self.instrument = Instrument()
+                # reload custom config
+                self.instrument.loadConfig("mca8000d.cfg")
                 wx.Frame.__init__(self,parent,title=title,pos=wx.DefaultPosition,size=wx.DefaultSize, style=wx.DEFAULT_FRAME_STYLE)
                 self.menuBar = wx.MenuBar()
                 self.menuFile = wx.Menu()
@@ -157,7 +154,7 @@ class Frame (wx.Frame):
                 self.Bind(wx.EVT_CLOSE, self.onClose)
                 self.updateTimer=wx.Timer(self)
                 self.Bind(wx.EVT_TIMER, self.onUpdateTimer, self.updateTimer)
-                self.updateTimer.Start(milliseconds=1000, oneShot=False)
+                self.updateTimer.Start(milliseconds=2000, oneShot=False)
 
         def onExit(self, event):
                 self.Close(True)
@@ -195,10 +192,10 @@ class Frame (wx.Frame):
         
 
         def update(self):
-                spectrum = self.instrument.getSpectrum()
-                self.m.plotSpectrum(spectrum)
                 self.s.setStatus(self.instrument.bRunning())
                 self.s.setTimeValue(self.instrument.getAcquisitionTime())
+                spectrum = self.instrument.getSpectrum()
+                self.m.plotSpectrum(spectrum)
                 
 
 class MCAApp(wx.App):

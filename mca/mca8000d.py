@@ -199,7 +199,11 @@ configParameters = {"RESC" : "Reset Configuration",\
                     "GPME" : "G.P. Counter Uses MCA_EN",\
                     "GPGA" : "G.P. Counter Uses Gate",\
                     "GPMC" : "G.P. Counter Cleared With MCA",\
-                    "MCAE" : "MCA/MCS Enable"}
+                    "MCAE" : "MCA/MCS Enable",\
+                    "TPEA" : "peaking time",\
+                    "TFLA" : "Flat Top Width",\
+                    "TPFA" : "Fast channel peaking time",\
+                    "AINP" : "Analog input pos/neg"}
 
 
 
@@ -211,6 +215,34 @@ def printConfig(cfg):
 
 
 
+def writeConfig(filename,cfg):
+    """save hardware configuration to file"""
+    fh = open(filename, "w")
+    for k in cfg.keys():
+        fh.write(k + "=" +cfg[k] +';\n')
+    fh.close()
+
+
+def createCfgString(cfg):
+    cfgstring = ""
+    for k in cfg.keys():
+        cfgstring += k + "=" +cfg[k] +';'
+    return(cfgstring)
+
+    
+def readConfig(filename):
+    """load hardware configuration from file"""
+    fh = open(filename, "r")
+    cfg = {}
+    for line in fh:
+        last = line.find(";")
+        pv= line[:last].split('=')
+        cfg.setdefault(pv[0], pv[1])
+    fh.close()
+    return(cfg)
+
+
+    
 
 spectrumSize ={ 1 : 255,\
                 2 : 255,\
