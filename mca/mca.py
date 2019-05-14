@@ -21,6 +21,7 @@
 import wx
 import sys
 import os
+import os.path
 import mca8000d
 import numpy
 import matplotlib
@@ -67,9 +68,15 @@ class Instrument():
 
 
         def loadConfig(self, filename):
-                newCfg=mca8000d.readConfig(filename)
-                newCfgString = mca8000d.createCfgString(newCfg)
-                self.device.sendCmdConfig(newCfgString)
+                success=False
+                try:
+                        newCfg=mca8000d.readConfig(filename)
+                        newCfgString = mca8000d.createCfgString(newCfg)
+                        self.device.sendCmdConfig(newCfgString)
+                        success = True
+                except:
+                        success = False
+                return (success)
                 
 
         
@@ -129,7 +136,11 @@ class Frame (wx.Frame):
         def __init__(self, parent, title):
                 self.instrument = Instrument()
                 # reload custom config
-                self.instrument.loadConfig("mca8000d.cfg")
+                if (False == self.instrument.loadConfig("mca8000d.cfg")):
+                        # try $Home/.mca8000d.cfg
+                        homedir = os.path.expanduser("~")
+                        myconfig = homedir + "/.mca8000d.cfg"
+                        self.instrument.loadConfig(myconfig)
                 wx.Frame.__init__(self,parent,title=title,pos=wx.DefaultPosition,size=wx.DefaultSize, style=wx.DEFAULT_FRAME_STYLE)
                 self.menuBar = wx.MenuBar()
                 self.menuFile = wx.Menu()
